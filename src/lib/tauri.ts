@@ -186,8 +186,53 @@ function calculateMonthlySummary(records: IncomeRecord[], year: number, month: n
 // In-memory photo storage for decrypted photos
 const photoDataStore = new Map<string, string>();
 
+// Import an array of raw records (e.g. from local migration json), encrypt them and sync to cloud
+export async function importRecordsList(rawRecords: any[]): Promise<number> {
+  let count = 0;
+  for (const r of rawRecords) {
+    if (!r.entry_date || !r.amount) continue;
+    const recordId = r.id || Date.now() + count;
+
+    if (r.photo_base64 && r.photo_filename) {
+      photoDataStore.set(r.photo_filename, r.photo_base64);
+    }
+
+    const cleanRecord: IncomeRecord = {
+      id: recordId,
+      entry_date: r.entry_date,
+      amount: Number(r.amount),
+      category: r.category || "保障底薪",
+      payment_method: r.payment_method || "現金發放",
+      payer_or_patient: r.payer_or_patient || "",
+      photo_filename: r.photo_filename || null,
+      note: r.note || "",
+      created_at: r.created_at || new Date().toISOString(),
+      updated_at: r.updated_at || new Date().toISOString(),
+    };
+
+    const idx = memoryRecords.findIndex((m) => m.id === cleanRecord.id);
+    if (idx >= 0) {
+      memoryRecords[idx] = cleanRecord;
+    } else {
+      memoryRecords.push(cleanRecord);
+    }
+
+    if (isVaultUnlocked()) {
+      const envelope = await encryptPayload(cleanRecord);
+      if (currentUserId) {
+        await uploadEncryptedRecord(currentUserId, cleanRecord.id, envelope);
+      }
+    }
+    count++;
+  }
+
+  await persistLocalEncryptedCache(memoryRecords);
+  return count;
+}
+
 // API client interfacing with memory cache and encrypted persistence
 export const api = {
+
   getMonthlySummary: async (year: number, month: number): Promise<MonthlySummaryData> => {
     return calculateMonthlySummary(memoryRecords, year, month);
   },

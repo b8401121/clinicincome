@@ -15,11 +15,13 @@ import {
   Shield,
   KeyRound,
   Download,
+  Upload,
   Lock,
   Check,
   AlertCircle,
   Cloud,
 } from "lucide-react";
+import { importRecordsList } from "../lib/tauri";
 
 interface SecurityModalProps {
   isOpen: boolean;
@@ -27,7 +29,9 @@ interface SecurityModalProps {
   currentUser: User | null;
   onLocked: () => void;
   onOpenFirebaseConfig: () => void;
+  onImportSuccess?: () => void;
 }
+
 
 export const SecurityModal: React.FC<SecurityModalProps> = ({
   isOpen,
@@ -35,6 +39,7 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
   currentUser,
   onLocked,
   onOpenFirebaseConfig,
+  onImportSuccess,
 }) => {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -43,6 +48,44 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
   const [errorMsg, setErrorMsg] = useState("");
 
   if (!isOpen) return null;
+
+  // Handle importing backup or migration JSON
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setLoading(true);
+      setErrorMsg("");
+      setMsg("");
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+
+      let recordsToImport: any[] = [];
+      if (Array.isArray(parsed)) {
+        recordsToImport = parsed;
+      } else if (parsed.records && Array.isArray(parsed.records)) {
+        recordsToImport = parsed.records;
+      } else if (parsed.data && Array.isArray(parsed.data)) {
+        recordsToImport = parsed.data;
+      } else {
+        throw new Error("無法識別的 JSON 備份格式");
+      }
+
+      const importedCount = await importRecordsList(recordsToImport);
+      setMsg(`🎉 成功匯入 ${importedCount} 筆薪資紀錄與照片！已自動在本地加密並同步至 Google 雲端。`);
+      if (onImportSuccess) {
+        onImportSuccess();
+      }
+    } catch (err: any) {
+      console.error(err);
+      setErrorMsg("匯入失敗: " + (err.message || "檔案格式不正確"));
+    } finally {
+      setLoading(false);
+      e.target.value = "";
+    }
+  };
+
 
   // Handle changing master password
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -222,6 +265,29 @@ export const SecurityModal: React.FC<SecurityModalProps> = ({
               立即匯出
             </button>
           </div>
+
+          {/* Action 2.5: Import Records */}
+          <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between">
+            <div>
+              <div className="font-bold text-slate-800 flex items-center gap-1.5">
+                <Upload className="w-3.5 h-3.5 text-teal-600" />
+                匯入本機歷史紀錄檔 (.json)
+              </div>
+              <p className="text-[11px] text-slate-500 mt-0.5">
+                選取「本機歷史紀錄匯入包.json」，將原先本機的 4 筆薪資與照片一鍵加密同步上雲
+              </p>
+            </div>
+            <label className="cursor-pointer px-3 py-2 text-xs font-bold text-white bg-teal-600 hover:bg-teal-700 rounded-xl transition-colors shadow-sm whitespace-nowrap">
+              選擇檔案
+              <input
+                type="file"
+                accept=".json"
+                className="hidden"
+                onChange={handleImportFile}
+              />
+            </label>
+          </div>
+
 
           {/* Action 3: Firebase Config */}
           <div className="flex items-center justify-between p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">

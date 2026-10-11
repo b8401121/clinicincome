@@ -220,6 +220,7 @@ export function App() {
         currentUser={currentUser}
         onLocked={handleLockVault}
         onOpenFirebaseConfig={() => setIsFirebaseConfigOpen(true)}
+        onImportSuccess={loadData}
       />
 
       {/* Firebase Config Modal */}
