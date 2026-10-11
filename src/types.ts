@@ -83,3 +83,6 @@ export const DEFAULT_PAYMENT_METHODS = [
   "其他帳戶"
 ];
 
+export const DEFAULT_CLINIC_NAME = "吳鎮宇親子耳鼻喉科診所";
+
+

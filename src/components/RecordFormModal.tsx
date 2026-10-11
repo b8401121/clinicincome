@@ -5,6 +5,7 @@ import {
   UpdateRecordInput,
   DEFAULT_CATEGORIES,
   DEFAULT_PAYMENT_METHODS,
+  DEFAULT_CLINIC_NAME,
 } from "../types";
 import { api } from "../lib/tauri";
 import { X, Upload, Image as ImageIcon, Trash2, Calendar, DollarSign, Tag, CreditCard, User, AlignLeft } from "lucide-react";
@@ -28,7 +29,7 @@ export const RecordFormModal: React.FC<RecordFormModalProps> = ({
   const [amount, setAmount] = useState<string>("");
   const [category, setCategory] = useState(DEFAULT_CATEGORIES[0]);
   const [paymentMethod, setPaymentMethod] = useState(DEFAULT_PAYMENT_METHODS[0]);
-  const [payerOrPatient, setPayerOrPatient] = useState("");
+  const [payerOrPatient, setPayerOrPatient] = useState(DEFAULT_CLINIC_NAME);
   const [note, setNote] = useState("");
 
   // Photo state
@@ -69,7 +70,7 @@ export const RecordFormModal: React.FC<RecordFormModalProps> = ({
       setAmount("");
       setCategory(DEFAULT_CATEGORIES[0]);
       setPaymentMethod(DEFAULT_PAYMENT_METHODS[0]);
-      setPayerOrPatient("");
+      setPayerOrPatient(DEFAULT_CLINIC_NAME);
       setNote("");
       setPhotoPreview(null);
       setPhotoBase64(null);
