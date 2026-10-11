@@ -1,0 +1,22 @@
+[package]
+name = "clinicincome"
+version = "0.1.0"
+description = "診所收入記帳系統"
+authors = ["Clinic Management Team"]
+edition = "2021"
+
+[lib]
+name = "clinicincome_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+rusqlite = { version = "0.32", features = ["bundled"] }
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+base64 = "0.22"
