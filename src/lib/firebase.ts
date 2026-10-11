@@ -135,6 +135,10 @@ export function subscribeAuth(callback: (user: User | null) => void): () => void
   return onAuthStateChanged(auth, callback);
 }
 
+export function getCurrentFirebaseUser(): User | null {
+  return auth?.currentUser || null;
+}
+
 // Firestore E2EE API (All data stored in Firestore is 100% encrypted ciphertext)
 export async function fetchVaultChallenge(uid: string): Promise<VaultChallenge | null> {
   if (!firestore) return null;

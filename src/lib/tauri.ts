@@ -12,6 +12,7 @@ import {
   uploadEncryptedPhoto,
   fetchEncryptedPhoto,
   removeEncryptedPhoto,
+  getCurrentFirebaseUser,
 } from "./firebase";
 
 // Check if running inside Tauri desktop app
@@ -24,6 +25,10 @@ let currentUserId: string | null = null;
 
 export function setCurrentUserId(uid: string | null) {
   currentUserId = uid;
+}
+
+export function getActiveUserId(): string | null {
+  return currentUserId || getCurrentFirebaseUser()?.uid || null;
 }
 
 // In-memory decrypted cache (strictly in memory, lost on lock)
@@ -46,7 +51,7 @@ export async function syncEncryptedStorage(uid?: string | null): Promise<IncomeR
     return [];
   }
 
-  const targetUid = uid || currentUserId;
+  const targetUid = uid || getActiveUserId();
 
   // 1. If Firebase user is authenticated, sync from Firestore
   if (targetUid) {
@@ -201,8 +206,9 @@ export async function importRecordsList(rawRecords: any[]): Promise<number> {
       if (isVaultUnlocked()) {
         try {
           const photoEnv = await encryptPayload({ data: r.photo_base64 });
-          if (currentUserId) {
-            await uploadEncryptedPhoto(currentUserId, r.photo_filename, photoEnv);
+          const activeUid = getActiveUserId();
+          if (activeUid) {
+            await uploadEncryptedPhoto(activeUid, r.photo_filename, photoEnv);
           }
         } catch (photoErr) {
           console.warn("Failed to encrypt and upload photo:", photoErr);
@@ -232,8 +238,9 @@ export async function importRecordsList(rawRecords: any[]): Promise<number> {
 
     if (isVaultUnlocked()) {
       const envelope = await encryptPayload(cleanRecord);
-      if (currentUserId) {
-        await uploadEncryptedRecord(currentUserId, cleanRecord.id, envelope);
+      const activeUid = getActiveUserId();
+      if (activeUid) {
+        await uploadEncryptedRecord(activeUid, cleanRecord.id, envelope);
       }
     }
     count++;
@@ -301,12 +308,13 @@ export const api = {
     // Encrypt and persist
     if (isVaultUnlocked()) {
       const envelope = await encryptPayload(newRecord);
-      if (currentUserId) {
-        await uploadEncryptedRecord(currentUserId, newId, envelope);
+      const activeUid = getActiveUserId();
+      if (activeUid) {
+        await uploadEncryptedRecord(activeUid, newId, envelope);
         if (input.photo_base64 && photoFilename) {
           try {
             const photoEnv = await encryptPayload({ data: input.photo_base64 });
-            await uploadEncryptedPhoto(currentUserId, photoFilename, photoEnv);
+            await uploadEncryptedPhoto(activeUid, photoFilename, photoEnv);
           } catch (photoErr) {
             console.warn("Failed to upload photo:", photoErr);
           }
@@ -322,23 +330,24 @@ export const api = {
     const idx = memoryRecords.findIndex((r) => r.id === input.id);
     if (idx === -1) throw new Error("找不到此筆紀錄");
 
+    const activeUid = getActiveUserId();
     const oldPhotoFilename = memoryRecords[idx].photo_filename;
     let photoFilename = oldPhotoFilename;
     if (input.remove_photo) {
       if (photoFilename) {
         photoDataStore.delete(photoFilename);
-        if (currentUserId) {
-          removeEncryptedPhoto(currentUserId, photoFilename).catch(console.warn);
+        if (activeUid) {
+          removeEncryptedPhoto(activeUid, photoFilename).catch(console.warn);
         }
       }
       photoFilename = null;
     } else if (input.photo_base64) {
       photoFilename = `photo_${input.id}.jpg`;
       photoDataStore.set(photoFilename, input.photo_base64);
-      if (isVaultUnlocked() && currentUserId) {
+      if (isVaultUnlocked() && activeUid) {
         try {
           const pEnv = await encryptPayload({ data: input.photo_base64 });
-          await uploadEncryptedPhoto(currentUserId, photoFilename, pEnv);
+          await uploadEncryptedPhoto(activeUid, photoFilename, pEnv);
         } catch (photoErr) {
           console.warn("Failed to upload updated photo:", photoErr);
         }
@@ -362,8 +371,8 @@ export const api = {
     // Encrypt and persist
     if (isVaultUnlocked()) {
       const envelope = await encryptPayload(updatedRecord);
-      if (currentUserId) {
-        await uploadEncryptedRecord(currentUserId, input.id, envelope);
+      if (activeUid) {
+        await uploadEncryptedRecord(activeUid, input.id, envelope);
       }
       await persistLocalEncryptedCache(memoryRecords);
     }
@@ -372,18 +381,19 @@ export const api = {
   },
 
   deleteRecord: async (id: number): Promise<boolean> => {
+    const activeUid = getActiveUserId();
     const record = memoryRecords.find((r) => r.id === id);
     if (record?.photo_filename) {
       photoDataStore.delete(record.photo_filename);
-      if (currentUserId) {
-        removeEncryptedPhoto(currentUserId, record.photo_filename).catch(console.warn);
+      if (activeUid) {
+        removeEncryptedPhoto(activeUid, record.photo_filename).catch(console.warn);
       }
     }
 
     memoryRecords = memoryRecords.filter((r) => r.id !== id);
 
-    if (currentUserId) {
-      await removeEncryptedRecord(currentUserId, id);
+    if (activeUid) {
+      await removeEncryptedRecord(activeUid, id);
     }
     await persistLocalEncryptedCache(memoryRecords);
 
@@ -396,9 +406,10 @@ export const api = {
     if (cached) return cached;
 
     // 2. Fetch encrypted photo from Firestore if logged in
-    if (isVaultUnlocked() && currentUserId) {
+    const activeUid = getActiveUserId();
+    if (isVaultUnlocked() && activeUid) {
       try {
-        const photoEnv = await fetchEncryptedPhoto(currentUserId, filename);
+        const photoEnv = await fetchEncryptedPhoto(activeUid, filename);
         if (photoEnv) {
           const decrypted = await decryptPayload<{ data: string }>(photoEnv);
           if (decrypted?.data) {
