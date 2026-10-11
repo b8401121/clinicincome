@@ -333,12 +333,15 @@ export const api = {
       }
       photoFilename = null;
     } else if (input.photo_base64) {
-      photoFilename = `photo_${input.id}.png`;
+      photoFilename = `photo_${input.id}.jpg`;
       photoDataStore.set(photoFilename, input.photo_base64);
       if (isVaultUnlocked() && currentUserId) {
-        encryptPayload({ data: input.photo_base64 })
-          .then((pEnv) => uploadEncryptedPhoto(currentUserId!, photoFilename!, pEnv))
-          .catch(console.warn);
+        try {
+          const pEnv = await encryptPayload({ data: input.photo_base64 });
+          await uploadEncryptedPhoto(currentUserId, photoFilename, pEnv);
+        } catch (photoErr) {
+          console.warn("Failed to upload updated photo:", photoErr);
+        }
       }
     }
 

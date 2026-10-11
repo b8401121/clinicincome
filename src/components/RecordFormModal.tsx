@@ -79,22 +79,51 @@ export const RecordFormModal: React.FC<RecordFormModalProps> = ({
     setErrorMsg("");
   }, [recordToEdit, defaultDate, isOpen]);
 
-  // Handle image file selection
+  // Handle image file selection with client-side compression
   const processImageFile = (file: File) => {
     if (!file.type.startsWith("image/")) {
       setErrorMsg("請選擇有效的圖片檔案 (JPG, PNG, WebP)");
       return;
     }
-    const ext = file.name.split(".").pop()?.toLowerCase() || "png";
-    setPhotoExt(ext);
+    setPhotoExt("jpg");
 
     const reader = new FileReader();
     reader.onload = (e) => {
-      const result = e.target?.result as string;
-      setPhotoPreview(result);
-      setPhotoBase64(result);
-      setRemoveExistingPhoto(false);
-      setErrorMsg("");
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          } else {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.75);
+          setPhotoPreview(compressedDataUrl);
+          setPhotoBase64(compressedDataUrl);
+          setRemoveExistingPhoto(false);
+          setErrorMsg("");
+        } else {
+          const fallback = e.target?.result as string;
+          setPhotoPreview(fallback);
+          setPhotoBase64(fallback);
+          setRemoveExistingPhoto(false);
+        }
+      };
+      img.src = e.target?.result as string;
     };
     reader.readAsDataURL(file);
   };

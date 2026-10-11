@@ -217,6 +217,26 @@ export const RecordList: React.FC<RecordListProps> = ({
                           />
                           <span>檢視薪資單憑證</span>
                         </button>
+                      ) : record.photo_filename ? (
+                        <button
+                          onClick={() => {
+                            api.getPhotoData(record.photo_filename!).then((data) => {
+                              if (data) {
+                                setPhotoCache((prev) => ({ ...prev, [record.photo_filename!]: data }));
+                                onViewPhoto(
+                                  data,
+                                  `${record.entry_date} - ${record.payer_or_patient} [${record.category}] (NT$ ${record.amount})`
+                                );
+                              } else {
+                                alert("未能從雲端載入此張照片，請確認網路連線或在原上傳裝置重新儲存。");
+                              }
+                            });
+                          }}
+                          className="inline-flex items-center gap-1 text-[11px] text-teal-600 hover:text-teal-800 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-200"
+                        >
+                          <ImageIcon className="w-3.5 h-3.5 animate-pulse text-teal-500" />
+                          <span>讀取相片憑證...</span>
+                        </button>
                       ) : (
                         <span className="text-[11px] text-slate-300">無照片憑證</span>
                       )}
