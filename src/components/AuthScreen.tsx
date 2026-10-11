@@ -65,8 +65,18 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
             setIsNewUser(true);
           }
         } catch (err: any) {
-          console.error(err);
-          setErrorMsg("載入金鑰庫資訊失敗，請檢查網路連線");
+          console.error("Firestore fetch error:", err);
+          const code = err?.code || "";
+          if (code === "permission-denied" || err?.message?.includes("permission")) {
+            setErrorMsg("⚠️ Firestore 權限被拒絕：請至 Firebase 控制台將 Firestore 安全規則設為允許登入使用者讀寫 (request.auth != null)。");
+          } else if (code.includes("not-found") || err?.message?.includes("not found")) {
+            setErrorMsg("⚠️ Firestore 尚未建立：請至 Firebase 控制台點擊「建立資料庫」。");
+          } else {
+            setErrorMsg(`⚠️ 雲端讀取異常 (${err.message || code})。若為首次使用，可直接設定主密碼建立金鑰庫。`);
+          }
+          // Default to new user mode so the user is never stuck
+          setVaultChallenge(null);
+          setIsNewUser(true);
         } finally {
           setLoading(false);
         }
@@ -81,6 +91,7 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
           setIsNewUser(true);
         }
       }
+
     }
 
     loadChallenge();
@@ -118,10 +129,20 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
       const challenge = await createVaultChallenge(password);
 
       if (currentUser) {
-        await saveVaultChallenge(currentUser.uid, challenge);
+        try {
+          await saveVaultChallenge(currentUser.uid, challenge);
+        } catch (dbErr: any) {
+          console.warn("Firestore save challenge error:", dbErr);
+          // Fallback to local storage so user is not stuck
+          localStorage.setItem("clinic_local_vault_challenge", JSON.stringify(challenge));
+          if (dbErr?.code === "permission-denied" || dbErr?.message?.includes("permission")) {
+            alert("⚠️ 提示：Google Firestore 雲端資料庫權限不足，目前已先保存在此裝置本機！\n請至 Firebase 控制台的 Firestore 規則中將權限設為允許讀寫，即可啟用跨裝置同步。");
+          }
+        }
       } else {
         localStorage.setItem("clinic_local_vault_challenge", JSON.stringify(challenge));
       }
+
 
       setVaultChallenge(challenge);
       setIsNewUser(false);
@@ -312,9 +333,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({
               </button>
             </div>
 
-            {/* Mode A: Setup Master Password (First-Time) */}
-            {isNewUser ? (
+            {/* Mode A: Setup Master Password (First-Time or Missing Challenge) */}
+            {isNewUser || !vaultChallenge ? (
               <form onSubmit={handleSetupPassword} className="space-y-3.5">
+
                 <div className="text-center">
                   <h3 className="text-sm font-extrabold text-slate-800 flex items-center justify-center gap-1.5">
                     <KeyRound className="w-4 h-4 text-teal-600" />
