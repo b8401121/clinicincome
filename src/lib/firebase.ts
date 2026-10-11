@@ -31,7 +31,16 @@ export interface FirebaseConfig {
 
 const STORAGE_KEY_FIREBASE_CONFIG = "clinic_income_firebase_config_v1";
 
-// Load config from LocalStorage or Vite Env
+const DEFAULT_FIREBASE_CONFIG: FirebaseConfig = {
+  apiKey: "AIzaSyBtiF8q0_-Hy0yR7vuHGwgkTOmcMRFYXFI",
+  authDomain: "clinicincome-24bce.firebaseapp.com",
+  projectId: "clinicincome-24bce",
+  storageBucket: "clinicincome-24bce.firebasestorage.app",
+  messagingSenderId: "70086210967",
+  appId: "1:70086210967:web:4f07c8fde2462397e200d2",
+};
+
+// Load config from LocalStorage or Default
 export function getFirebaseConfig(): FirebaseConfig | null {
   try {
     const saved = localStorage.getItem(STORAGE_KEY_FIREBASE_CONFIG);
@@ -59,8 +68,9 @@ export function getFirebaseConfig(): FirebaseConfig | null {
     };
   }
 
-  return null;
+  return DEFAULT_FIREBASE_CONFIG;
 }
+
 
 export function saveFirebaseConfig(config: FirebaseConfig): void {
   localStorage.setItem(STORAGE_KEY_FIREBASE_CONFIG, JSON.stringify(config));
