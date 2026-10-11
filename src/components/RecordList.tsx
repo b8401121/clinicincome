@@ -147,74 +147,59 @@ export const RecordList: React.FC<RecordListProps> = ({
           )}
         </div>
       ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
-                <th className="py-3 px-4">入賬日期</th>
-                <th className="py-3 px-4">發薪診所 / 醫療院所</th>
-                <th className="py-3 px-4">薪資項目</th>
-                <th className="py-3 px-4 text-right">實領金額 (NTD)</th>
-                <th className="py-3 px-4">入帳方式</th>
-                <th className="py-3 px-4">明細與節數備註</th>
-                <th className="py-3 px-4 text-center">薪資條 / 存摺</th>
-                <th className="py-3 px-4 text-center">操作</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
-              {filteredRecords.map((record) => {
-                const photoUrl = record.photo_filename
-                  ? photoCache[record.photo_filename]
-                  : null;
+        <>
+          {/* Mobile Card View (screens < md) */}
+          <div className="md:hidden divide-y divide-slate-100">
+            {filteredRecords.map((record) => {
+              const photoUrl = record.photo_filename
+                ? photoCache[record.photo_filename]
+                : null;
 
-                return (
-                  <tr
-                    key={record.id}
-                    className="hover:bg-slate-50/80 transition-colors group"
-                  >
-                    {/* Date */}
-                    <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
-                      {record.entry_date}
-                    </td>
-
-                    {/* Clinic Name */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="inline-flex items-center gap-1.5 font-bold text-slate-800">
-                        <span className="w-2 h-2 rounded-full bg-teal-500" />
-                        {record.payer_or_patient || "未填寫診所"}
+              return (
+                <div key={record.id} className="p-3.5 space-y-2.5 hover:bg-slate-50/60 transition-colors">
+                  {/* Top row: Date, Clinic, and Amount */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-teal-500 flex-shrink-0" />
+                        <span className="font-bold text-slate-800 text-sm">
+                          {record.payer_or_patient || "未填寫診所"}
+                        </span>
+                      </div>
+                      <span className="text-[11px] font-medium text-slate-400 block pl-3.5">
+                        {record.entry_date}
                       </span>
-                    </td>
+                    </div>
 
-                    {/* Category */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span
-                        className={`inline-block px-2 py-0.5 text-[11px] font-semibold rounded-md border ${getCategoryBadgeClass(
-                          record.category
-                        )}`}
-                      >
-                        {record.category}
-                      </span>
-                    </td>
-
-                    {/* Amount */}
-                    <td className="py-3.5 px-4 text-right font-extrabold text-teal-800 text-sm whitespace-nowrap">
-                      {formatCurrency(record.amount)}
-                    </td>
-
-                    {/* Payment Method */}
-                    <td className="py-3.5 px-4 whitespace-nowrap">
-                      <span className="inline-block px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700">
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-base font-extrabold text-teal-800 tracking-tight">
+                        {formatCurrency(record.amount)}
+                      </div>
+                      <span className="text-[10px] text-slate-500 bg-slate-100 px-1.5 py-0.2 rounded font-medium">
                         {record.payment_method}
                       </span>
-                    </td>
+                    </div>
+                  </div>
 
-                    {/* Note */}
-                    <td className="py-3.5 px-4 text-slate-600 max-w-[220px] truncate">
-                      {record.note || "—"}
-                    </td>
+                  {/* Middle row: Category badge & Notes */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span
+                      className={`inline-block px-2 py-0.5 text-[10px] font-semibold rounded-md border ${getCategoryBadgeClass(
+                        record.category
+                      )}`}
+                    >
+                      {record.category}
+                    </span>
+                    {record.note && (
+                      <span className="text-xs text-slate-600 line-clamp-1 flex-1">
+                        {record.note}
+                      </span>
+                    )}
+                  </div>
 
-                    {/* Photo thumbnail */}
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                  {/* Bottom row: Thumbnail and Action buttons */}
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-50">
+                    <div>
                       {photoUrl ? (
                         <button
                           onClick={() =>
@@ -223,61 +208,183 @@ export const RecordList: React.FC<RecordListProps> = ({
                               `${record.entry_date} - ${record.payer_or_patient} [${record.category}] (NT$ ${record.amount})`
                             )
                           }
-                          className="relative inline-block group/img focus:outline-none"
-                          title="點擊放大查看薪資條/存摺截圖"
+                          className="inline-flex items-center gap-1.5 text-[11px] font-medium text-teal-700 bg-teal-50/80 hover:bg-teal-100 px-2.5 py-1 rounded-lg transition-colors border border-teal-200/60"
                         >
                           <img
                             src={photoUrl}
-                            alt="Salary slip"
-                            className="w-9 h-9 object-cover rounded-lg border border-slate-200 shadow-sm hover:scale-110 transition-transform cursor-zoom-in"
+                            alt="Slip preview"
+                            className="w-4 h-4 object-cover rounded flex-shrink-0"
                           />
-                          <span className="absolute -top-1 -right-1 flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
-                          </span>
+                          <span>檢視薪資單憑證</span>
                         </button>
-                      ) : record.photo_filename ? (
-                        <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
-                          <ImageIcon className="w-4 h-4 animate-pulse" />
-                        </div>
                       ) : (
-                        <span className="text-slate-300 text-[11px]">—</span>
+                        <span className="text-[11px] text-slate-300">無照片憑證</span>
                       )}
-                    </td>
+                    </div>
 
-                    {/* Actions */}
-                    <td className="py-3.5 px-4 text-center whitespace-nowrap">
-                      <div className="flex items-center justify-center space-x-1">
-                        <button
-                          onClick={() => onEdit(record)}
-                          className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
-                          title="編輯此筆"
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => onEdit(record)}
+                        className="p-1.5 text-slate-500 hover:text-teal-700 hover:bg-teal-50 rounded-lg transition-colors"
+                        title="編輯此筆"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `確定要刪除 ${record.entry_date} [${record.payer_or_patient} - ${record.category}] NT$ ${record.amount} 的紀錄嗎？`
+                            )
+                          ) {
+                            onDelete(record.id);
+                          }
+                        }}
+                        className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                        title="刪除此筆"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Desktop Table View (screens >= md) */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-slate-50/50">
+                  <th className="py-3 px-4">入賬日期</th>
+                  <th className="py-3 px-4">發薪診所 / 醫療院所</th>
+                  <th className="py-3 px-4">薪資項目</th>
+                  <th className="py-3 px-4 text-right">實領金額 (NTD)</th>
+                  <th className="py-3 px-4">入帳方式</th>
+                  <th className="py-3 px-4">明細與節數備註</th>
+                  <th className="py-3 px-4 text-center">薪資條 / 存摺</th>
+                  <th className="py-3 px-4 text-center">操作</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
+                {filteredRecords.map((record) => {
+                  const photoUrl = record.photo_filename
+                    ? photoCache[record.photo_filename]
+                    : null;
+
+                  return (
+                    <tr
+                      key={record.id}
+                      className="hover:bg-slate-50/80 transition-colors group"
+                    >
+                      {/* Date */}
+                      <td className="py-3.5 px-4 font-semibold text-slate-800 whitespace-nowrap">
+                        {record.entry_date}
+                      </td>
+
+                      {/* Clinic Name */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-flex items-center gap-1.5 font-bold text-slate-800">
+                          <span className="w-2 h-2 rounded-full bg-teal-500" />
+                          {record.payer_or_patient || "未填寫診所"}
+                        </span>
+                      </td>
+
+                      {/* Category */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span
+                          className={`inline-block px-2 py-0.5 text-[11px] font-semibold rounded-md border ${getCategoryBadgeClass(
+                            record.category
+                          )}`}
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (
-                              window.confirm(
-                                `確定要刪除 ${record.entry_date} [${record.payer_or_patient} - ${record.category}] NT$ ${record.amount} 的紀錄嗎？`
+                          {record.category}
+                        </span>
+                      </td>
+
+                      {/* Amount */}
+                      <td className="py-3.5 px-4 text-right font-extrabold text-teal-800 text-sm whitespace-nowrap">
+                        {formatCurrency(record.amount)}
+                      </td>
+
+                      {/* Payment Method */}
+                      <td className="py-3.5 px-4 whitespace-nowrap">
+                        <span className="inline-block px-2 py-0.5 text-[11px] font-medium rounded-md bg-slate-100 text-slate-700">
+                          {record.payment_method}
+                        </span>
+                      </td>
+
+                      {/* Note */}
+                      <td className="py-3.5 px-4 text-slate-600 max-w-[220px] truncate">
+                        {record.note || "—"}
+                      </td>
+
+                      {/* Photo thumbnail */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        {photoUrl ? (
+                          <button
+                            onClick={() =>
+                              onViewPhoto(
+                                photoUrl,
+                                `${record.entry_date} - ${record.payer_or_patient} [${record.category}] (NT$ ${record.amount})`
                               )
-                            ) {
-                              onDelete(record.id);
                             }
-                          }}
-                          className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="刪除此筆"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+                            className="relative inline-block group/img focus:outline-none"
+                            title="點擊放大查看薪資條/存摺截圖"
+                          >
+                            <img
+                              src={photoUrl}
+                              alt="Salary slip"
+                              className="w-9 h-9 object-cover rounded-lg border border-slate-200 shadow-sm hover:scale-110 transition-transform cursor-zoom-in"
+                            />
+                            <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
+                              <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
+                            </span>
+                          </button>
+                        ) : record.photo_filename ? (
+                          <div className="w-9 h-9 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 mx-auto">
+                            <ImageIcon className="w-4 h-4 animate-pulse" />
+                          </div>
+                        ) : (
+                          <span className="text-slate-300 text-[11px]">—</span>
+                        )}
+                      </td>
+
+                      {/* Actions */}
+                      <td className="py-3.5 px-4 text-center whitespace-nowrap">
+                        <div className="flex items-center justify-center space-x-1">
+                          <button
+                            onClick={() => onEdit(record)}
+                            className="p-1.5 text-slate-500 hover:text-teal-600 hover:bg-teal-50 rounded-lg transition-colors"
+                            title="編輯此筆"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `確定要刪除 ${record.entry_date} [${record.payer_or_patient} - ${record.category}] NT$ ${record.amount} 的紀錄嗎？`
+                                )
+                              ) {
+                                onDelete(record.id);
+                              }
+                            }}
+                            className="p-1.5 text-slate-500 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="刪除此筆"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
 

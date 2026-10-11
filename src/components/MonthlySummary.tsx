@@ -42,60 +42,60 @@ export const MonthlySummary: React.FC<MonthlySummaryProps> = ({ summary, loading
   return (
     <div className="space-y-6 mb-6">
       {/* 3 Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {/* Total Income */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">
               {summary.month_str} 當月醫師總收入
             </span>
-            <div className="text-2xl lg:text-3xl font-extrabold text-slate-800 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1 tracking-tight">
               {formatCurrency(summary.total_amount)}
             </div>
-            <p className="text-xs text-teal-600 font-medium mt-1">
+            <p className="text-[11px] sm:text-xs text-teal-600 font-medium mt-1">
               各診所實撥薪資入帳總額
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600">
-            <DollarSign className="w-6 h-6" />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 flex-shrink-0">
+            <DollarSign className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-teal-500/5 rounded-full pointer-events-none" />
         </div>
 
         {/* Record Count */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between">
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">
               診所撥薪筆數
             </span>
-            <div className="text-2xl lg:text-3xl font-extrabold text-slate-800 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1 tracking-tight">
               {summary.record_count} <span className="text-sm font-normal text-slate-400">次撥款</span>
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+            <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">
               已確認入帳薪資/診費明細
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600">
-            <FileText className="w-6 h-6" />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 flex-shrink-0">
+            <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-500/5 rounded-full pointer-events-none" />
         </div>
 
         {/* Daily Average */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between sm:col-span-2 lg:col-span-1">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-between sm:col-span-2 lg:col-span-1">
           <div>
-            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+            <span className="text-[11px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider">
               日均折合所得
             </span>
-            <div className="text-2xl lg:text-3xl font-extrabold text-slate-800 mt-1 tracking-tight">
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-800 mt-1 tracking-tight">
               {formatCurrency(summary.daily_average)}
             </div>
-            <p className="text-xs text-slate-500 font-medium mt-1">
+            <p className="text-[11px] sm:text-xs text-slate-500 font-medium mt-1">
               以當月天數均攤
             </p>
           </div>
-          <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600">
-            <TrendingUp className="w-6 h-6" />
+          <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 flex-shrink-0">
+            <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6" />
           </div>
           <div className="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-500/5 rounded-full pointer-events-none" />
         </div>
