@@ -9,6 +9,9 @@ import {
   uploadEncryptedRecord,
   fetchAllEncryptedRecords,
   removeEncryptedRecord,
+  uploadEncryptedPhoto,
+  fetchEncryptedPhoto,
+  removeEncryptedPhoto,
 } from "./firebase";
 
 // Check if running inside Tauri desktop app
@@ -195,6 +198,16 @@ export async function importRecordsList(rawRecords: any[]): Promise<number> {
 
     if (r.photo_base64 && r.photo_filename) {
       photoDataStore.set(r.photo_filename, r.photo_base64);
+      if (isVaultUnlocked()) {
+        try {
+          const photoEnv = await encryptPayload({ data: r.photo_base64 });
+          if (currentUserId) {
+            await uploadEncryptedPhoto(currentUserId, r.photo_filename, photoEnv);
+          }
+        } catch (photoErr) {
+          console.warn("Failed to encrypt and upload photo:", photoErr);
+        }
+      }
     }
 
     const cleanRecord: IncomeRecord = {
@@ -290,6 +303,14 @@ export const api = {
       const envelope = await encryptPayload(newRecord);
       if (currentUserId) {
         await uploadEncryptedRecord(currentUserId, newId, envelope);
+        if (input.photo_base64 && photoFilename) {
+          try {
+            const photoEnv = await encryptPayload({ data: input.photo_base64 });
+            await uploadEncryptedPhoto(currentUserId, photoFilename, photoEnv);
+          } catch (photoErr) {
+            console.warn("Failed to upload photo:", photoErr);
+          }
+        }
       }
       await persistLocalEncryptedCache(memoryRecords);
     }
@@ -301,13 +322,24 @@ export const api = {
     const idx = memoryRecords.findIndex((r) => r.id === input.id);
     if (idx === -1) throw new Error("找不到此筆紀錄");
 
-    let photoFilename = memoryRecords[idx].photo_filename;
+    const oldPhotoFilename = memoryRecords[idx].photo_filename;
+    let photoFilename = oldPhotoFilename;
     if (input.remove_photo) {
-      if (photoFilename) photoDataStore.delete(photoFilename);
+      if (photoFilename) {
+        photoDataStore.delete(photoFilename);
+        if (currentUserId) {
+          removeEncryptedPhoto(currentUserId, photoFilename).catch(console.warn);
+        }
+      }
       photoFilename = null;
     } else if (input.photo_base64) {
       photoFilename = `photo_${input.id}.png`;
       photoDataStore.set(photoFilename, input.photo_base64);
+      if (isVaultUnlocked() && currentUserId) {
+        encryptPayload({ data: input.photo_base64 })
+          .then((pEnv) => uploadEncryptedPhoto(currentUserId!, photoFilename!, pEnv))
+          .catch(console.warn);
+      }
     }
 
     const updatedRecord: IncomeRecord = {
@@ -340,6 +372,9 @@ export const api = {
     const record = memoryRecords.find((r) => r.id === id);
     if (record?.photo_filename) {
       photoDataStore.delete(record.photo_filename);
+      if (currentUserId) {
+        removeEncryptedPhoto(currentUserId, record.photo_filename).catch(console.warn);
+      }
     }
 
     memoryRecords = memoryRecords.filter((r) => r.id !== id);
@@ -353,7 +388,27 @@ export const api = {
   },
 
   getPhotoData: async (filename: string): Promise<string | null> => {
-    return photoDataStore.get(filename) || null;
+    // 1. Check in-memory store first
+    const cached = photoDataStore.get(filename);
+    if (cached) return cached;
+
+    // 2. Fetch encrypted photo from Firestore if logged in
+    if (isVaultUnlocked() && currentUserId) {
+      try {
+        const photoEnv = await fetchEncryptedPhoto(currentUserId, filename);
+        if (photoEnv) {
+          const decrypted = await decryptPayload<{ data: string }>(photoEnv);
+          if (decrypted?.data) {
+            photoDataStore.set(filename, decrypted.data);
+            return decrypted.data;
+          }
+        }
+      } catch (err) {
+        console.warn(`Failed to fetch/decrypt photo ${filename}:`, err);
+      }
+    }
+
+    return null;
   },
 
   exportCsv: async (month: string): Promise<string> => {

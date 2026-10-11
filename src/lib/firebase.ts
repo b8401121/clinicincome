@@ -179,3 +179,39 @@ export async function removeEncryptedRecord(uid: string, recordId: number): Prom
   const docRef = doc(firestore, `users/${uid}/encrypted_records/${recordId}`);
   await deleteDoc(docRef);
 }
+
+// Encrypted Photo Storage in Firestore (each photo envelope stored in separate document)
+export async function uploadEncryptedPhoto(
+  uid: string,
+  filename: string,
+  envelope: EncryptedEnvelope
+): Promise<void> {
+  if (!firestore) return;
+  const safeFilename = filename.replace(/\//g, "_");
+  const docRef = doc(firestore, `users/${uid}/encrypted_photos/${safeFilename}`);
+  await setDoc(docRef, envelope);
+}
+
+export async function fetchEncryptedPhoto(
+  uid: string,
+  filename: string
+): Promise<EncryptedEnvelope | null> {
+  if (!firestore) return null;
+  const safeFilename = filename.replace(/\//g, "_");
+  const docRef = doc(firestore, `users/${uid}/encrypted_photos/${safeFilename}`);
+  const snap = await getDoc(docRef);
+  if (snap.exists()) {
+    return snap.data() as EncryptedEnvelope;
+  }
+  return null;
+}
+
+export async function removeEncryptedPhoto(
+  uid: string,
+  filename: string
+): Promise<void> {
+  if (!firestore) return;
+  const safeFilename = filename.replace(/\//g, "_");
+  const docRef = doc(firestore, `users/${uid}/encrypted_photos/${safeFilename}`);
+  await deleteDoc(docRef);
+}
